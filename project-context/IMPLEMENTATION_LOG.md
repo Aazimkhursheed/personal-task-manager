@@ -105,3 +105,7 @@ A comprehensive test suite was executed against the running backend on port 5000
 2. **Priority Ordering Logic**:
    - *Issue*: Standard alphabetical sorting on string priorities results in `high -> low -> medium`.
    - *Resolution*: Created a rank lookup map `{ high: 1, medium: 2, low: 3 }` ensuring intuitive priority order.
+3. **MongoDB Atlas SRV DNS Resolution Failure (`querySrv ECONNREFUSED`)**:
+   - *Issue*: Connecting to MongoDB Atlas using `mongodb+srv://` failed in Node.js with `querySrv ECONNREFUSED` because the local network's default DNS server failed to resolve the SRV records for the cluster.
+   - *Root Cause Analysis*: Windows `nslookup` resolved correctly using public DNS, but Node.js's internal c-ares resolver failed against the default local DNS resolver. Running `dns.setServers(['1.1.1.1'])` in Node.js resolved the SRV record and shard addresses successfully.
+   - *Solution*: Imported Node's built-in `dns` module in `backend/config/db.js` and set `dns.setServers(['1.1.1.1'])` before calling `mongoose.connect()`. This resolved the connection reliably without adding third-party dependencies or altering the connection string logic.

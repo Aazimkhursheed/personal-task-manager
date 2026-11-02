@@ -115,3 +115,18 @@ This document records the architectural, design, and implementation decisions ma
 - **Reasoning**:
   - In Mongoose 8+, `{ new: true }` produces deprecation warnings.
   - Demonstrates up-to-date knowledge of the Mongoose ecosystem.
+
+---
+
+## Decision 11: Custom DNS Server Configuration (`dns.setServers(['1.1.1.1'])`)
+- **Context**: Resolving MongoDB Atlas SRV records (`mongodb+srv://`) when local or ISP DNS servers fail with `querySrv ECONNREFUSED`.
+- **Alternatives Considered**:
+  - Modifying system-wide network adapter DNS settings.
+  - Using long-form non-SRV connection strings (`mongodb://...` listing every replica host).
+  - Calling Node.js's built-in `dns.setServers(['1.1.1.1'])` prior to Mongoose connection.
+- **Decision**: Configure `dns.setServers(['1.1.1.1'])` in `backend/config/db.js`.
+- **Reasoning**:
+  - Requires zero system configuration changes or administrative permissions.
+  - Requires zero additional npm dependencies (uses Node.js native `dns` module).
+  - Resolves SRV lookups reliably across all machines, networks, and environments.
+  - Easy for a fresher to explain in an interview.
