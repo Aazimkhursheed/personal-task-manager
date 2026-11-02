@@ -31,6 +31,7 @@ This log tracks all setup steps, executed commands, installed packages, file cha
 | 7 | `c:\Users\hp\Desktop\task-manager\frontend` | `npm run build` | Validate frontend production build | Success (`✓ built in 264ms`) |
 | 8 | `c:\Users\hp\Desktop\task-manager\backend` | `node -c server.js` | Validate backend syntax | Success (No syntax errors) |
 | 9 | `c:\Users\hp\Desktop\task-manager` | `git check-ignore -v backend/.env ...` | Verify gitignore rules | Success (`.env` and `node_modules` ignored) |
+| 10 | `c:\Users\hp\Desktop\task-manager` | `git add . ; git commit -m "..."` | Create initial baseline commit | Success (`[master (root-commit) 07e9f70]`) |
 
 ---
 
@@ -87,3 +88,28 @@ This log tracks all setup steps, executed commands, installed packages, file cha
 2. **Safe Environment Variable Isolation**:
    - *Issue*: Preventing accidental leak of MongoDB connection credentials.
    - *Solution*: Provided `.env.example` with safe placeholder strings while keeping actual `.env` files in `.gitignore`.
+
+---
+
+## [Verification Stage] Setup & Repository Health Verification
+**Date**: 2026-11-02  
+**Status**: Verified & Passing
+
+### 1. Verification Checklist & Command Evidence
+
+| Verification Target | Command Executed | Result / Output | Status |
+| :--- | :--- | :--- | :--- |
+| **Git Root Location** | `git rev-parse --show-toplevel` | `C:/Users/hp/Desktop/task-manager` | PASSED (Initialized in root) |
+| **Git Working Tree Status** | `git status` | `On branch master`<br>`nothing to commit, working tree clean` | PASSED (Clean tree) |
+| **Git Commit History** | `git log --oneline` | `07e9f70 chore: initial project setup for mern personal task manager` | PASSED (Baseline recorded) |
+| **Ignore `node_modules`** | `git check-ignore -v backend/node_modules frontend/node_modules` | Matched `backend/.gitignore:1` and `frontend/.gitignore:10` | PASSED (Properly ignored) |
+| **Ignore `.env` files** | `git check-ignore -v .env backend/.env frontend/.env .env.local` | Matched `.gitignore:9`, `backend/.gitignore:2`, `.gitignore:11`, `.gitignore:18` | PASSED (Properly ignored) |
+| **Ignore Build Folders** | `git check-ignore -v dist frontend/dist dist-ssr` | Matched `frontend/.gitignore:11:dist` and root `.gitignore:16:dist/` | PASSED (Properly ignored) |
+| **Preserve `.env.example`** | `git check-ignore -v backend/.env.example` | Returned exit code `1` (Not ignored) | PASSED (Not ignored) |
+| **Track `.env.example`** | `git ls-files backend/.env.example` | `backend/.env.example` | PASSED (Tracked in Git) |
+
+### 2. Summary
+- Git was confirmed to be initialized strictly at the workspace root (`task-manager/`), not in any sub-folder.
+- The working tree is fully clean with no untracked or dangling files.
+- All sensitive credentials and heavy package folders are properly excluded from Git tracking.
+- `.env.example` is confirmed tracked to serve as a reference template for other developers.
