@@ -6,15 +6,9 @@ This document records the architectural, design, and implementation decisions ma
 
 ## Decision 1: Monorepo-Style Folder Separation (`frontend/` + `backend/`)
 - **Context**: The project requires both a client application and a server API.
-- **Alternatives Considered**:
-  - *Single combined package.json*: Mixing client and server dependencies.
-  - *Separated top-level directories*: `frontend/` and `backend/` with independent `package.json` files.
+- **Alternatives Considered**: Single combined package.json vs separated top-level directories (`frontend/` and `backend/`).
 - **Decision**: Separated `frontend/` and `backend/` directories.
-- **Reasoning**:
-  - Ensures clean separation of concerns.
-  - Backend dependencies (e.g. Express, Mongoose) do not pollute frontend bundles.
-  - Matches real-world enterprise architectures where frontend and backend can be deployed independently.
-  - Simple for an interview reviewer to navigate.
+- **Reasoning**: Ensures clean separation of concerns, avoids polluting client bundles, and matches industry production structures.
 
 ---
 
@@ -22,32 +16,23 @@ This document records the architectural, design, and implementation decisions ma
 - **Context**: Setting up the React client application.
 - **Alternatives Considered**: Create-React-App, Vite, Next.js.
 - **Decision**: Vite with the `react` template.
-- **Reasoning**:
-  - CRA is deprecated and slow.
-  - Next.js introduces server-side rendering and routing conventions that add unnecessary complexity for a beginner MERN task manager.
-  - Vite is lightning-fast, lightweight, standard in modern React development, and easy to explain.
+- **Reasoning**: CRA is deprecated and slow. Vite is modern, lightning-fast with native ESM, and lightweight.
 
 ---
 
 ## Decision 3: HTTP Client - Browser Native `fetch` instead of Axios
 - **Context**: Frontend needs to communicate with the Express backend REST API.
 - **Alternatives Considered**: Axios, TanStack Query, Native `fetch`.
-- **Decision**: Native `fetch` with simple helper functions.
-- **Reasoning**:
-  - Native `fetch` is built into modern browsers; no extra npm package is needed.
-  - Demonstrates core JavaScript competency during interviews.
-  - Keeps bundle size minimal and logic transparent.
+- **Decision**: Native `fetch` organized in `services/api.js`.
+- **Reasoning**: Native `fetch` requires zero external packages, keeps client bundle size minimal, and demonstrates fundamental JavaScript promise/async knowledge.
 
 ---
 
 ## Decision 4: Styling Approach - Vanilla CSS
 - **Context**: Styling the task manager interface.
 - **Alternatives Considered**: Tailwind CSS, CSS Modules, Styled Components, Vanilla CSS.
-- **Decision**: Vanilla CSS with organized layout classes and CSS variables.
-- **Reasoning**:
-  - Avoids setup overhead, config files, and compiler dependencies.
-  - Every CSS property is visible and understandable without framework-specific utility knowledge.
-  - Excellent for interviews because it tests fundamental CSS knowledge (Flexbox, Grid, transitions).
+- **Decision**: Vanilla CSS (`App.css` and `index.css`) with CSS Grid and Flexbox.
+- **Reasoning**: Avoids framework overhead, allows clean inspection of CSS properties, and demonstrates core CSS competency.
 
 ---
 
@@ -55,9 +40,7 @@ This document records the architectural, design, and implementation decisions ma
 - **Context**: Developer experience when modifying Express routes or models.
 - **Alternatives Considered**: Manual restart (`node server.js`), `nodemon`, `ts-node-dev`.
 - **Decision**: `nodemon` as a development dependency.
-- **Reasoning**:
-  - Restarts the server automatically upon file save.
-  - Zero config needed; just run `npm run dev`.
+- **Reasoning**: Restarts the server automatically upon file save with zero config needed (`npm run dev`).
 
 ---
 
@@ -65,9 +48,7 @@ This document records the architectural, design, and implementation decisions ma
 - **Context**: Securing database connection strings and server configuration.
 - **Alternatives Considered**: Hardcoded configuration values vs `.env` files with `dotenv`.
 - **Decision**: Use `.env` with `dotenv`, providing `.env.example` as a template and adding `.env` to `.gitignore`.
-- **Reasoning**:
-  - Security best practice: secrets (like MongoDB credentials) must never be committed to source control.
-  - Standard industry practice expected in technical interviews.
+- **Reasoning**: Security best practice: secrets must never be committed to Git.
 
 ---
 
@@ -75,36 +56,23 @@ This document records the architectural, design, and implementation decisions ma
 - **Context**: Structuring the Express.js backend codebase.
 - **Alternatives Considered**: All-in-one `server.js` file vs layered architecture (`config/`, `models/`, `controllers/`, `routes/`, `middleware/`).
 - **Decision**: Layered architecture with explicit separation.
-- **Reasoning**:
-  - Avoids monolithic code files that are hard to read and test.
-  - Each layer has a single responsibility:
-    - `routes/`: Defines HTTP methods and endpoint paths.
-    - `controllers/`: Handles request validation, calls models, returns JSON.
-    - `models/`: Enforces data schema and data integrity via Mongoose.
-    - `middleware/`: Intercepts errors and 404s globally.
-  - Highly appreciated in fresh graduate / junior MERN interviews.
+- **Reasoning**: Separates routing from business logic and database interactions, making code modular and readable.
 
 ---
 
 ## Decision 8: Priority Sorting Ranking Implementation
 - **Context**: Implementing priority sorting (`high`, `medium`, `low`).
-- **Alternatives Considered**:
-  - Pure string sorting in database (alphabetical: `high` -> `low` -> `medium`), which is logically incorrect.
-  - In-memory logical rank sorting: `{ high: 1, medium: 2, low: 3 }`.
-- **Decision**: Logical rank mapping in controller memory.
-- **Reasoning**:
-  - Guarantees `high` priority tasks appear first, followed by `medium`, then `low`.
-  - Easy for a fresher to explain: "Since priority strings don't alphabetize logically, we map them to numbers 1, 2, and 3 so the sorting matches human expectations."
+- **Alternatives Considered**: Alphabetical string sort (`high` -> `low` -> `medium`) vs in-memory logical ranking.
+- **Decision**: Logical rank mapping in controller: `{ high: 1, medium: 2, low: 3 }`.
+- **Reasoning**: Alphabetical sorting does not match human intuition. Numeric ranking ensures high priority tasks appear first.
 
 ---
 
 ## Decision 9: Safe Centralized Error Handling Without Stack Trace Leakage
 - **Context**: Handling unexpected errors and database rejections.
-- **Alternatives Considered**: Returning raw `err.stack` or inline `try/catch` with ad-hoc response shapes.
-- **Decision**: Centralized Express error-handling middleware (`errorMiddleware.js`) returning uniform `{ success: false, message: ... }` without stack traces.
-- **Reasoning**:
-  - Security best practice: exposing stack traces reveals internal paths, server libraries, and vulnerabilities to attackers.
-  - Provides a predictable JSON interface for frontend clients.
+- **Alternatives Considered**: Exposing `err.stack` vs centralized error handler returning clean JSON.
+- **Decision**: Centralized error middleware returning `{ success: false, message: ... }`.
+- **Reasoning**: Security best practice to prevent information disclosure while giving clients friendly error messages.
 
 ---
 
@@ -112,21 +80,44 @@ This document records the architectural, design, and implementation decisions ma
 - **Context**: Returning the modified document from `findByIdAndUpdate`.
 - **Alternatives Considered**: `{ new: true }` vs `{ returnDocument: 'after' }`.
 - **Decision**: Use `{ returnDocument: 'after', runValidators: true }`.
-- **Reasoning**:
-  - In Mongoose 8+, `{ new: true }` produces deprecation warnings.
-  - Demonstrates up-to-date knowledge of the Mongoose ecosystem.
+- **Reasoning**: In Mongoose 8+, `{ new: true }` produces deprecation warnings.
 
 ---
 
 ## Decision 11: Custom DNS Server Configuration (`dns.setServers(['1.1.1.1'])`)
 - **Context**: Resolving MongoDB Atlas SRV records (`mongodb+srv://`) when local or ISP DNS servers fail with `querySrv ECONNREFUSED`.
-- **Alternatives Considered**:
-  - Modifying system-wide network adapter DNS settings.
-  - Using long-form non-SRV connection strings (`mongodb://...` listing every replica host).
-  - Calling Node.js's built-in `dns.setServers(['1.1.1.1'])` prior to Mongoose connection.
+- **Alternatives Considered**: Modifying system-wide network adapter DNS settings vs calling Node.js native `dns.setServers(['1.1.1.1'])`.
 - **Decision**: Configure `dns.setServers(['1.1.1.1'])` in `backend/config/db.js`.
-- **Reasoning**:
-  - Requires zero system configuration changes or administrative permissions.
-  - Requires zero additional npm dependencies (uses Node.js native `dns` module).
-  - Resolves SRV lookups reliably across all machines, networks, and environments.
-  - Easy for a fresher to explain in an interview.
+- **Reasoning**: Zero system configuration changes required; works across all networks and machines natively.
+
+---
+
+## Decision 12: Three-Column Kanban-Style Status Workflow
+- **Context**: Organizing task cards visually by their lifecycle stage.
+- **Alternatives Considered**: Single long list with status filters vs 3 visual columns (`Todo`, `In Progress`, `Done`).
+- **Decision**: 3 dedicated columns with status counters and empty state notifications.
+- **Reasoning**: Allows users to instantly view workload distribution at a glance, matching modern productivity dashboards.
+
+---
+
+## Decision 13: Dedicated Native Fetch API Service Layer (`services/api.js`)
+- **Context**: Making HTTP requests from React components to the Express backend.
+- **Alternatives Considered**: Inlining `fetch()` inside each component vs centralized `services/api.js` helper functions.
+- **Decision**: Centralized `api.js` exporting `getTasks`, `createTask`, `updateTaskStatus`, and `deleteTask`.
+- **Reasoning**: Keeps UI components clean and focused on rendering. Any changes to API endpoints or headers only require editing one file.
+
+---
+
+## Decision 14: Immediate UI State Synchronization (No Manual Refresh)
+- **Context**: Synchronizing client-side React state after API mutations (create, update status, delete).
+- **Alternatives Considered**: Forcing `window.location.reload()` vs updating React `tasks` state immediately upon API response.
+- **Decision**: Update `tasks` state immediately using functional state setters (`setTasks(prev => ...)`).
+- **Reasoning**: Provides a smooth, seamless Single Page Application (SPA) experience without jarring page reloads.
+
+---
+
+## Decision 15: Safe Date Parsing & Client-Side Validation in `TaskForm`
+- **Context**: Handling user input in the task creation form.
+- **Alternatives Considered**: Sending raw form values directly to backend vs client-side validation and date parsing.
+- **Decision**: Validate that `title.trim()` is not empty before sending, and safely parse dates with `isNaN(new Date(...).getTime())`.
+- **Reasoning**: Gives instantaneous user feedback on missing fields and avoids sending malformed payloads to the API.

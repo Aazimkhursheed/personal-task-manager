@@ -50,62 +50,78 @@ This log tracks all setup steps, executed commands, installed packages, file cha
   - `DELETE /tasks/:id`: Delete task with ObjectId and 404 validation.
 - Implement global error handling middleware in `middleware/errorMiddleware.js`.
 - Mount routes cleanly in `routes/taskRoutes.js` and `server.js`.
-- Prevent stack trace leakage to clients.
-- Verify server startup, MongoDB connection, and all 5 API endpoints against edge cases.
+- Resolve MongoDB Atlas SRV DNS resolution issue using built-in `dns` module.
 
 ---
 
-### 2. Files Created & Modified
+### 2. Backend Files Created & Modified
 
 | File | Status | Description |
 | :--- | :--- | :--- |
-| `backend/config/db.js` | Created | Standalone MongoDB connection function with Mongoose and process error termination. |
-| `backend/models/Task.js` | Created | Mongoose schema with `priority` (`low`, `medium`, `high`) and `status` (`todo`, `in_progress`, `done`) enums and defaults. |
-| `backend/controllers/taskController.js` | Created | Full CRUD business logic, validation for empty titles, invalid enums, invalid ObjectIds, and custom priority sorting. |
+| `backend/config/db.js` | Created | Standalone MongoDB connection function with Mongoose and `dns.setServers(['1.1.1.1'])`. |
+| `backend/models/Task.js` | Created | Mongoose schema with `priority` and `status` enums, default timestamps, and validations. |
+| `backend/controllers/taskController.js` | Created | Full CRUD business logic, validation, custom priority ranking, and `returnDocument: 'after'`. |
 | `backend/routes/taskRoutes.js` | Created | Express router mapping `/` to `POST`/`GET` and `/:id` to `GET`/`PUT`/`DELETE`. |
-| `backend/middleware/errorMiddleware.js` | Created | Centralized error handler managing Mongoose `CastError`, `ValidationError`, and safe client JSON without stack traces. |
-| `backend/server.js` | Modified | Wired up `connectDB()`, CORS, JSON parser, route mountings (`/tasks` & `/api/tasks`), and error middleware. |
-| `backend/.env` | Created | Configured with `PORT=5000` and `MONGO_URI=mongodb://127.0.0.1:27017/taskmanager` (ignored by Git). |
+| `backend/middleware/errorMiddleware.js` | Created | Centralized error handler managing Mongoose `CastError`, `ValidationError`, and safe client JSON. |
+| `backend/server.js` | Modified | Wired up `connectDB()`, CORS, JSON parser, route mountings, and error middleware. |
+| `backend/.env` | Created | Configured with `PORT=5000` and Atlas `MONGO_URI`. |
 
 ---
 
-### 3. Automated API Test Suite & Verification Results
+## [Part 2] Frontend Implementation & Verification
+**Date**: 2026-11-02  
+**Status**: Completed & Verified
 
-A comprehensive test suite was executed against the running backend on port 5000:
-
-| # | Test Case Description | Expected Result | Actual Result | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | `GET /api/health` | `200 OK`, `success: true` | `200 OK` | PASSED |
-| 2 | `POST /tasks` with empty title (`" "`) | `400 Bad Request`, `Title is required` | `400 Bad Request` | PASSED |
-| 3 | `POST /tasks` with invalid priority (`"urgent"`) | `400 Bad Request`, `Invalid priority` | `400 Bad Request` | PASSED |
-| 4 | `POST /tasks` with invalid status (`"archived"`) | `400 Bad Request`, `Invalid status` | `400 Bad Request` | PASSED |
-| 5 | `POST /tasks` valid Task 1 (High priority, todo) | `201 Created`, task object returned | `201 Created` | PASSED |
-| 6 | `POST /tasks` valid Task 2 (Low priority, in_progress) | `201 Created`, task object returned | `201 Created` | PASSED |
-| 7 | `POST /tasks` valid Task 3 (Medium priority, done) | `201 Created`, task object returned | `201 Created` | PASSED |
-| 8 | `GET /tasks` retrieve all tasks | `200 OK`, count >= 3 | `200 OK`, count: 3 | PASSED |
-| 9 | `GET /tasks?status=todo` filter by status | `200 OK`, only `todo` tasks returned | `200 OK`, filtered | PASSED |
-| 10 | `GET /tasks?sortBy=priority` rank priority | `200 OK`, order: `high` > `medium` > `low` | `200 OK`, `['high', 'medium', 'low']` | PASSED |
-| 11 | `GET /tasks?sortBy=dueDate` sort by dueDate | `200 OK`, chronological order | `200 OK`, sorted | PASSED |
-| 12 | `GET /tasks/:id` retrieve valid task | `200 OK`, single task returned | `200 OK`, matched ID | PASSED |
-| 13 | `GET /tasks/invalid-id-123` invalid ObjectId | `400 Bad Request`, `Invalid task ID format` | `400 Bad Request` | PASSED |
-| 14 | `GET /tasks/507f1f77bcf86cd799439011` nonexistent task | `404 Not Found`, `Task not found` | `404 Not Found` | PASSED |
-| 15 | `PUT /tasks/:id` update status and priority | `200 OK`, updated task returned | `200 OK`, updated | PASSED |
-| 16 | `PUT /tasks/:id` update with empty title | `400 Bad Request`, `Title cannot be empty` | `400 Bad Request` | PASSED |
-| 17 | `DELETE /tasks/:id` delete existing task | `200 OK`, `Task deleted successfully` | `200 OK` | PASSED |
-| 18 | `GET /tasks/:id` after deletion | `404 Not Found` | `404 Not Found` | PASSED |
-
-**Summary**: 18 of 18 test assertions passed with 0 failures.
+### 1. Goals & Scope
+- Build clean task management dashboard in React + Vite using plain, beginner-friendly JavaScript.
+- Display tasks in three dedicated Kanban-style columns: `Todo`, `In Progress`, and `Done`.
+- Create task creation form with `Title` (required), `Description`, `Priority` (`low`, `medium`, `high`), and `Due Date`.
+- Display task card details: Title, Description, Priority badge, Due Date, Status select dropdown, and Delete button.
+- Implement full API integration with `http://localhost:5000/tasks` using browser-native `fetch`.
+- Manage state with React `useState` and `useEffect`, updating UI immediately without page reload.
+- Implement loading indicator, error alert banners, and validation to prevent empty title submissions.
+- Implement responsive layout using clean Vanilla CSS.
 
 ---
 
-### 4. Issues Encountered & Resolved
-1. **Mongoose 8+ Deprecation Warning**:
-   - *Issue*: Using `new: true` in `Task.findByIdAndUpdate` triggers a deprecation warning in Mongoose 8.
-   - *Resolution*: Updated to modern standard `returnDocument: 'after'` with `runValidators: true`.
-2. **Priority Ordering Logic**:
-   - *Issue*: Standard alphabetical sorting on string priorities results in `high -> low -> medium`.
-   - *Resolution*: Created a rank lookup map `{ high: 1, medium: 2, low: 3 }` ensuring intuitive priority order.
-3. **MongoDB Atlas SRV DNS Resolution Failure (`querySrv ECONNREFUSED`)**:
-   - *Issue*: Connecting to MongoDB Atlas using `mongodb+srv://` failed in Node.js with `querySrv ECONNREFUSED` because the local network's default DNS server failed to resolve the SRV records for the cluster.
-   - *Root Cause Analysis*: Windows `nslookup` resolved correctly using public DNS, but Node.js's internal c-ares resolver failed against the default local DNS resolver. Running `dns.setServers(['1.1.1.1'])` in Node.js resolved the SRV record and shard addresses successfully.
-   - *Solution*: Imported Node's built-in `dns` module in `backend/config/db.js` and set `dns.setServers(['1.1.1.1'])` before calling `mongoose.connect()`. This resolved the connection reliably without adding third-party dependencies or altering the connection string logic.
+### 2. Frontend Files Created & Modified
+
+| File | Status | Description |
+| :--- | :--- | :--- |
+| `frontend/src/services/api.js` | Created | Native `fetch` API service functions (`getTasks`, `createTask`, `updateTaskStatus`, `deleteTask`). |
+| `frontend/src/components/Navbar.jsx` | Created | Header component displaying app branding, total tasks count, and completed tasks count. |
+| `frontend/src/components/TaskForm.jsx` | Created | Controlled form with input fields, validation error banner, priority select, date input, and submission handler. |
+| `frontend/src/components/TaskColumn.jsx` | Created | Column container for `Todo`, `In Progress`, and `Done` sections with count badge and empty state fallback. |
+| `frontend/src/components/TaskCard.jsx` | Created | Card component displaying task title, colored priority badge, description, formatted due date, status select dropdown, and delete button. |
+| `frontend/src/App.jsx` | Modified | Main dashboard state container; manages `tasks`, `loading`, `submitting`, `errorMessage`, `successMessage`, and immediate state mutation handlers. |
+| `frontend/src/App.css` | Modified | Clean dashboard styling with responsive CSS Grid layout, priority accents, status borders, and loading spinner. |
+| `frontend/src/index.css` | Modified | Clean CSS reset, base typography, and responsive container settings. |
+
+---
+
+### 3. Verification & Browser Testing Results
+
+The frontend application was verified in an automated browser session at `http://localhost:5173/`:
+
+1. **Dashboard Initialization**:
+   - Dashboard loaded with Navbar, Task Creation Form, and 3 columns (`Todo`, `In Progress`, `Done`).
+   - Loading indicator displayed while fetching tasks from `http://localhost:5000/tasks`.
+2. **Form Validation**:
+   - Attempted to submit the form with an empty title.
+   - Validation triggered: `Task title is required` alert displayed; no invalid network request sent.
+3. **Task Creation**:
+   - Entered Title: `Prepare Interview Slides`, Priority: `High`, Due Date: `Nov 20, 2026`, Description: `Document full-stack architecture and React state flows`.
+   - Clicked `+ Add Task`.
+   - Task card immediately appeared in the `Todo` column with `HIGH` priority badge and formatted due date.
+   - Navbar `Total Tasks` incremented to 1.
+4. **Status Updates**:
+   - Changed task status dropdown from `Todo` to `In Progress`.
+   - Card moved immediately to the `In Progress` column without page reload.
+   - Changed task status dropdown from `In Progress` to `Done`.
+   - Card moved immediately to the `Done` column; Navbar `Completed` count incremented to 1.
+5. **Task Deletion**:
+   - Clicked `Delete` button on the task card.
+   - Task was removed from MongoDB Atlas and deleted from local state immediately.
+   - Columns updated to show empty state fallback message: `No tasks in this section`.
+6. **Production Build**:
+   - Executed `npm run build` in `frontend/`: compiled in `1.38s` with `0 errors`.
