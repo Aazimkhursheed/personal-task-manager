@@ -17,6 +17,9 @@ dist/
 dist-ssr/
 *.local
 
+# Personal Documentation (Kept locally for interview prep)
+project-context/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

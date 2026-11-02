@@ -1,94 +1,116 @@
-# Personal Task Manager (MERN Stack)
+# Personal Task Manager
 
-A clean, beginner-friendly full-stack Personal Task Manager built with the MERN stack for a company interview assignment.
+## Description
+Personal Task Manager is a full-stack web application built using the MERN stack (MongoDB, Express.js, React, Node.js). It allows users to create, view, organize, and delete daily tasks across three distinct stages: Todo, In Progress, and Done. The project follows a clean client-server architecture with an Express REST API backend and a responsive React frontend.
 
----
+## Technologies Used
+- Frontend: React 19, Vite, Vanilla CSS, native Fetch API
+- Backend: Node.js, Express.js, Mongoose, dotenv, cors
+- Database: MongoDB Atlas (or local MongoDB)
+- Development Tools: Git, npm, nodemon
 
-## Folder Structure
+## Main Features
+- Three-Column Dashboard: Tasks are organized into Todo, In Progress, and Done sections.
+- Task Creation: Form to add new tasks with title, description, priority (low, medium, high), and due date.
+- Instant Status Updates: Dropdown on each task card to change status immediately without reloading the page.
+- Task Deletion: Option to delete tasks permanently from both the database and the dashboard.
+- Input Validation: Client-side and server-side checks to reject empty titles and invalid enum values.
+- Error Handling: Centralized Express error-handling middleware and frontend alert banners.
 
+## Project Structure
 ```
 task-manager/
-├── backend/                  # Node.js + Express.js API server
-│   ├── node_modules/
-│   ├── .env.example          # Environment variables template
-│   ├── .gitignore            # Backend-specific ignore rules
-│   ├── package.json          # Express, Mongoose, dotenv, cors, nodemon
-│   └── server.js             # Express entry point with health check
-├── frontend/                 # React + Vite client application
-│   ├── node_modules/
-│   ├── public/
-│   ├── src/                  # React components and styling
+├── backend/
+│   ├── config/
+│   │   └── db.js
+│   ├── controllers/
+│   │   └── taskController.js
+│   ├── middleware/
+│   │   └── errorMiddleware.js
+│   ├── models/
+│   │   └── Task.js
+│   ├── routes/
+│   │   └── taskRoutes.js
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── package.json
+│   └── server.js
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── TaskCard.jsx
+│   │   │   ├── TaskColumn.jsx
+│   │   │   └── TaskForm.jsx
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   ├── App.css
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
 │   ├── index.html
 │   ├── package.json
 │   └── vite.config.js
-├── project-context/          # Complete architectural & interview docs
-│   ├── PROJECT_OVERVIEW.md   # Goals, architecture, planned features
-│   ├── REQUIREMENTS.md       # Functional & non-functional requirements
-│   ├── TECH_STACK.md         # Detailed tech choices & justifications
-│   ├── IMPLEMENTATION_LOG.md # Commands executed, files created, issues
-│   ├── DECISIONS.md          # Architectural decisions & reasoning
-│   ├── API_DOCUMENTATION.md  # REST API specification & schemas
-│   └── INTERVIEW_PREPARATION.md # Interview questions & talking points
-├── .gitignore                # Root gitignore (node_modules, .env files)
-└── README.md                 # Project setup and running instructions
+├── .gitignore
+├── NOTES.md
+└── README.md
 ```
 
----
+## Installation Instructions
 
-## Prerequisites
-- **Node.js**: v18 or higher recommended
-- **npm**: v9 or higher
-- **MongoDB Atlas Account** (or local MongoDB instance)
+1. Open your terminal in the root project folder.
 
----
+2. Install backend dependencies:
+```bash
+cd backend
+npm install
+```
 
-## Quick Start Guide
+3. Install frontend dependencies:
+```bash
+cd ../frontend
+npm install
+```
 
-### 1. Backend Setup
-1. Open a terminal and navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Create your `.env` configuration file from the template:
-   ```bash
-   copy .env.example .env
-   ```
-   *(On macOS/Linux: `cp .env.example .env`)*
-3. Open `.env` and fill in your MongoDB Atlas connection string:
-   ```env
-   PORT=5000
-   MONGO_URI=your_mongodb_connection_string
-   ```
-4. Start the backend in development mode:
-   ```bash
-   npm run dev
-   ```
-   The backend will start at `http://localhost:5000` (Health check at `http://localhost:5000/api/health`).
+## MongoDB Environment Configuration
 
----
+1. In the backend directory, create a `.env` file from `.env.example`:
+```bash
+cd backend
+copy .env.example .env
+```
+*(On macOS or Linux, use: `cp .env.example .env`)*
 
-### 2. Frontend Setup
-1. Open a new terminal and navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-3. Open your browser and visit:
-   ```
-   http://localhost:5173
-   ```
+2. Open `backend/.env` in your code editor and enter your MongoDB connection string:
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+```
 
----
+Example for MongoDB Atlas:
+```env
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/taskmanager?retryWrites=true&w=majority
+```
 
-## Documentation Links
-All planning, architecture, and interview materials are maintained in the [`project-context/`](./project-context/) directory:
-- [Project Overview](./project-context/PROJECT_OVERVIEW.md)
-- [Requirements](./project-context/REQUIREMENTS.md)
-- [Technology Stack](./project-context/TECH_STACK.md)
-- [Implementation Log](./project-context/IMPLEMENTATION_LOG.md)
-- [Architectural Decisions](./project-context/DECISIONS.md)
-- [API Documentation](./project-context/API_DOCUMENTATION.md)
-- [Interview Preparation Guide](./project-context/INTERVIEW_PREPARATION.md)
+Example for local MongoDB:
+```env
+MONGO_URI=mongodb://127.0.0.1:27017/taskmanager
+```
+
+## How to Run
+
+### 1. Start the Backend Server
+In your first terminal:
+```bash
+cd backend
+npm run dev
+```
+The server will start at `http://localhost:5000`.
+
+### 2. Start the Frontend Application
+In a second terminal:
+```bash
+cd frontend
+npm run dev
+```
+Open your browser and visit `http://localhost:5173`.
