@@ -68,3 +68,50 @@ This document records the architectural, design, and implementation decisions ma
 - **Reasoning**:
   - Security best practice: secrets (like MongoDB credentials) must never be committed to source control.
   - Standard industry practice expected in technical interviews.
+
+---
+
+## Decision 7: Model-Controller-Route Layered Backend Pattern
+- **Context**: Structuring the Express.js backend codebase.
+- **Alternatives Considered**: All-in-one `server.js` file vs layered architecture (`config/`, `models/`, `controllers/`, `routes/`, `middleware/`).
+- **Decision**: Layered architecture with explicit separation.
+- **Reasoning**:
+  - Avoids monolithic code files that are hard to read and test.
+  - Each layer has a single responsibility:
+    - `routes/`: Defines HTTP methods and endpoint paths.
+    - `controllers/`: Handles request validation, calls models, returns JSON.
+    - `models/`: Enforces data schema and data integrity via Mongoose.
+    - `middleware/`: Intercepts errors and 404s globally.
+  - Highly appreciated in fresh graduate / junior MERN interviews.
+
+---
+
+## Decision 8: Priority Sorting Ranking Implementation
+- **Context**: Implementing priority sorting (`high`, `medium`, `low`).
+- **Alternatives Considered**:
+  - Pure string sorting in database (alphabetical: `high` -> `low` -> `medium`), which is logically incorrect.
+  - In-memory logical rank sorting: `{ high: 1, medium: 2, low: 3 }`.
+- **Decision**: Logical rank mapping in controller memory.
+- **Reasoning**:
+  - Guarantees `high` priority tasks appear first, followed by `medium`, then `low`.
+  - Easy for a fresher to explain: "Since priority strings don't alphabetize logically, we map them to numbers 1, 2, and 3 so the sorting matches human expectations."
+
+---
+
+## Decision 9: Safe Centralized Error Handling Without Stack Trace Leakage
+- **Context**: Handling unexpected errors and database rejections.
+- **Alternatives Considered**: Returning raw `err.stack` or inline `try/catch` with ad-hoc response shapes.
+- **Decision**: Centralized Express error-handling middleware (`errorMiddleware.js`) returning uniform `{ success: false, message: ... }` without stack traces.
+- **Reasoning**:
+  - Security best practice: exposing stack traces reveals internal paths, server libraries, and vulnerabilities to attackers.
+  - Provides a predictable JSON interface for frontend clients.
+
+---
+
+## Decision 10: Modern Mongoose 8+ `returnDocument: 'after'`
+- **Context**: Returning the modified document from `findByIdAndUpdate`.
+- **Alternatives Considered**: `{ new: true }` vs `{ returnDocument: 'after' }`.
+- **Decision**: Use `{ returnDocument: 'after', runValidators: true }`.
+- **Reasoning**:
+  - In Mongoose 8+, `{ new: true }` produces deprecation warnings.
+  - Demonstrates up-to-date knowledge of the Mongoose ecosystem.

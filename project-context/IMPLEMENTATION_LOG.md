@@ -35,81 +35,73 @@ This log tracks all setup steps, executed commands, installed packages, file cha
 
 ---
 
-### 3. Dependencies Installed
-
-#### Backend (`backend/package.json`)
-- **`express` (`^4.21.2`)**: Fast, unopinionated, minimalist web framework for Node.js.
-- **`mongoose` (`^8.10.0`)**: Elegant MongoDB object modeling for Node.js.
-- **`dotenv` (`^16.4.7`)**: Loads environment variables from `.env` into `process.env`.
-- **`cors` (`^2.8.5`)**: Middleware to enable Cross-Origin Resource Sharing.
-- **`nodemon` (`^3.1.9`)** *(devDependencies)*: Tool that automatically restarts the node application when file changes are detected.
-
-#### Frontend (`frontend/package.json`)
-- **`react` (`^19.0.0`)**: Core React library for building UI components.
-- **`react-dom` (`^19.0.0`)**: React package for DOM rendering.
-- **`vite` (`^6.2.0`)** *(devDependencies)*: Modern frontend build tool and development server.
-- **`@vitejs/plugin-react` (`^4.3.4`)** *(devDependencies)*: Official React plugin for Vite.
-
----
-
-### 4. Files Created & Modified
-
-#### Root
-- `.gitignore`: Comprehensive gitignore ensuring `node_modules/`, `.env`, build artifacts (`dist/`), and OS files are ignored while keeping `.env.example` tracked.
-- `README.md`: Master documentation detailing folder structure, prerequisites, quick start guide, and documentation links.
-
-#### `project-context/`
-- `PROJECT_OVERVIEW.md`: Architectural summary, core features, and project goals.
-- `REQUIREMENTS.md`: Functional and non-functional requirements and constraints.
-- `TECH_STACK.md`: Complete breakdown of frontend, backend, database, and dev tooling with justifications.
-- `DECISIONS.md`: Architectural decisions (monorepo structure, Vite, Vanilla CSS, native fetch, nodemon, .env).
-- `API_DOCUMENTATION.md`: REST API specifications, endpoint schemas, HTTP status codes, and JSON conventions.
-- `INTERVIEW_PREPARATION.md`: Detailed answers to standard MERN interview questions, CORS, async/await, and architecture explanations.
-- `IMPLEMENTATION_LOG.md`: Step-by-step progress tracking.
-
-#### `backend/`
-- `package.json`: Configured with `start` (`node server.js`) and `dev` (`nodemon server.js`) scripts.
-- `.env.example`: Template with `PORT=5000` and `MONGO_URI=your_mongodb_connection_string`.
-- `.gitignore`: Dedicated backend gitignore ensuring `.env` and `node_modules` are ignored while `.env.example` remains tracked.
-- `server.js`: Initial lightweight Express server with CORS, JSON middleware, and `/api/health` check endpoint.
-
-#### `frontend/`
-- `package.json`: Configured Vite scripts (`dev`, `build`, `preview`).
-- `src/App.jsx`: Clean, beginner-friendly starter view checking backend health endpoint without any CRUD code.
-- `src/App.css`: Modern, clean Vanilla CSS layout with status indicators.
-- `index.html`: Web entry point.
-
----
-
-### 5. Issues Encountered & Solutions
-1. **Accidental Ignoring of `.env.example`**:
-   - *Issue*: The gitignore rule `.env.*` in `backend/.gitignore` caused Git to ignore `.env.example`.
-   - *Solution*: Added an explicit un-ignore exception `!.env.example` and `!*/.env.example` to both `backend/.gitignore` and the root `.gitignore`.
-2. **Safe Environment Variable Isolation**:
-   - *Issue*: Preventing accidental leak of MongoDB connection credentials.
-   - *Solution*: Provided `.env.example` with safe placeholder strings while keeping actual `.env` files in `.gitignore`.
-
----
-
-## [Verification Stage] Setup & Repository Health Verification
+## [Part 1] Backend Implementation & Verification
 **Date**: 2026-11-02  
-**Status**: Verified & Passing
+**Status**: Completed & 100% Passing
 
-### 1. Verification Checklist & Command Evidence
+### 1. Goals & Scope
+- Implement MongoDB connection function via Mongoose reading `MONGO_URI` from `.env`.
+- Implement Mongoose `Task` schema with title, description, priority enum, status enum, dueDate, and createdAt.
+- Implement controller functions for all 5 CRUD endpoints:
+  - `POST /tasks`: Create task with input validation.
+  - `GET /tasks`: Get all tasks with status filtering, dueDate sorting, and priority sorting.
+  - `GET /tasks/:id`: Get single task with ObjectId and 404 validation.
+  - `PUT /tasks/:id`: Update any task field with validation.
+  - `DELETE /tasks/:id`: Delete task with ObjectId and 404 validation.
+- Implement global error handling middleware in `middleware/errorMiddleware.js`.
+- Mount routes cleanly in `routes/taskRoutes.js` and `server.js`.
+- Prevent stack trace leakage to clients.
+- Verify server startup, MongoDB connection, and all 5 API endpoints against edge cases.
 
-| Verification Target | Command Executed | Result / Output | Status |
-| :--- | :--- | :--- | :--- |
-| **Git Root Location** | `git rev-parse --show-toplevel` | `C:/Users/hp/Desktop/task-manager` | PASSED (Initialized in root) |
-| **Git Working Tree Status** | `git status` | `On branch master`<br>`nothing to commit, working tree clean` | PASSED (Clean tree) |
-| **Git Commit History** | `git log --oneline` | `07e9f70 chore: initial project setup for mern personal task manager` | PASSED (Baseline recorded) |
-| **Ignore `node_modules`** | `git check-ignore -v backend/node_modules frontend/node_modules` | Matched `backend/.gitignore:1` and `frontend/.gitignore:10` | PASSED (Properly ignored) |
-| **Ignore `.env` files** | `git check-ignore -v .env backend/.env frontend/.env .env.local` | Matched `.gitignore:9`, `backend/.gitignore:2`, `.gitignore:11`, `.gitignore:18` | PASSED (Properly ignored) |
-| **Ignore Build Folders** | `git check-ignore -v dist frontend/dist dist-ssr` | Matched `frontend/.gitignore:11:dist` and root `.gitignore:16:dist/` | PASSED (Properly ignored) |
-| **Preserve `.env.example`** | `git check-ignore -v backend/.env.example` | Returned exit code `1` (Not ignored) | PASSED (Not ignored) |
-| **Track `.env.example`** | `git ls-files backend/.env.example` | `backend/.env.example` | PASSED (Tracked in Git) |
+---
 
-### 2. Summary
-- Git was confirmed to be initialized strictly at the workspace root (`task-manager/`), not in any sub-folder.
-- The working tree is fully clean with no untracked or dangling files.
-- All sensitive credentials and heavy package folders are properly excluded from Git tracking.
-- `.env.example` is confirmed tracked to serve as a reference template for other developers.
+### 2. Files Created & Modified
+
+| File | Status | Description |
+| :--- | :--- | :--- |
+| `backend/config/db.js` | Created | Standalone MongoDB connection function with Mongoose and process error termination. |
+| `backend/models/Task.js` | Created | Mongoose schema with `priority` (`low`, `medium`, `high`) and `status` (`todo`, `in_progress`, `done`) enums and defaults. |
+| `backend/controllers/taskController.js` | Created | Full CRUD business logic, validation for empty titles, invalid enums, invalid ObjectIds, and custom priority sorting. |
+| `backend/routes/taskRoutes.js` | Created | Express router mapping `/` to `POST`/`GET` and `/:id` to `GET`/`PUT`/`DELETE`. |
+| `backend/middleware/errorMiddleware.js` | Created | Centralized error handler managing Mongoose `CastError`, `ValidationError`, and safe client JSON without stack traces. |
+| `backend/server.js` | Modified | Wired up `connectDB()`, CORS, JSON parser, route mountings (`/tasks` & `/api/tasks`), and error middleware. |
+| `backend/.env` | Created | Configured with `PORT=5000` and `MONGO_URI=mongodb://127.0.0.1:27017/taskmanager` (ignored by Git). |
+
+---
+
+### 3. Automated API Test Suite & Verification Results
+
+A comprehensive test suite was executed against the running backend on port 5000:
+
+| # | Test Case Description | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | `GET /api/health` | `200 OK`, `success: true` | `200 OK` | PASSED |
+| 2 | `POST /tasks` with empty title (`" "`) | `400 Bad Request`, `Title is required` | `400 Bad Request` | PASSED |
+| 3 | `POST /tasks` with invalid priority (`"urgent"`) | `400 Bad Request`, `Invalid priority` | `400 Bad Request` | PASSED |
+| 4 | `POST /tasks` with invalid status (`"archived"`) | `400 Bad Request`, `Invalid status` | `400 Bad Request` | PASSED |
+| 5 | `POST /tasks` valid Task 1 (High priority, todo) | `201 Created`, task object returned | `201 Created` | PASSED |
+| 6 | `POST /tasks` valid Task 2 (Low priority, in_progress) | `201 Created`, task object returned | `201 Created` | PASSED |
+| 7 | `POST /tasks` valid Task 3 (Medium priority, done) | `201 Created`, task object returned | `201 Created` | PASSED |
+| 8 | `GET /tasks` retrieve all tasks | `200 OK`, count >= 3 | `200 OK`, count: 3 | PASSED |
+| 9 | `GET /tasks?status=todo` filter by status | `200 OK`, only `todo` tasks returned | `200 OK`, filtered | PASSED |
+| 10 | `GET /tasks?sortBy=priority` rank priority | `200 OK`, order: `high` > `medium` > `low` | `200 OK`, `['high', 'medium', 'low']` | PASSED |
+| 11 | `GET /tasks?sortBy=dueDate` sort by dueDate | `200 OK`, chronological order | `200 OK`, sorted | PASSED |
+| 12 | `GET /tasks/:id` retrieve valid task | `200 OK`, single task returned | `200 OK`, matched ID | PASSED |
+| 13 | `GET /tasks/invalid-id-123` invalid ObjectId | `400 Bad Request`, `Invalid task ID format` | `400 Bad Request` | PASSED |
+| 14 | `GET /tasks/507f1f77bcf86cd799439011` nonexistent task | `404 Not Found`, `Task not found` | `404 Not Found` | PASSED |
+| 15 | `PUT /tasks/:id` update status and priority | `200 OK`, updated task returned | `200 OK`, updated | PASSED |
+| 16 | `PUT /tasks/:id` update with empty title | `400 Bad Request`, `Title cannot be empty` | `400 Bad Request` | PASSED |
+| 17 | `DELETE /tasks/:id` delete existing task | `200 OK`, `Task deleted successfully` | `200 OK` | PASSED |
+| 18 | `GET /tasks/:id` after deletion | `404 Not Found` | `404 Not Found` | PASSED |
+
+**Summary**: 18 of 18 test assertions passed with 0 failures.
+
+---
+
+### 4. Issues Encountered & Resolved
+1. **Mongoose 8+ Deprecation Warning**:
+   - *Issue*: Using `new: true` in `Task.findByIdAndUpdate` triggers a deprecation warning in Mongoose 8.
+   - *Resolution*: Updated to modern standard `returnDocument: 'after'` with `runValidators: true`.
+2. **Priority Ordering Logic**:
+   - *Issue*: Standard alphabetical sorting on string priorities results in `high -> low -> medium`.
+   - *Resolution*: Created a rank lookup map `{ high: 1, medium: 2, low: 3 }` ensuring intuitive priority order.

@@ -1,6 +1,6 @@
 # Interview Preparation Guide - Personal Task Manager
 
-This guide covers essential technical concepts, common questions, and practical explanations you can reference when explaining this MERN application during an interview.
+This guide covers essential technical concepts, common interview questions, and clear, practical answers you can reference when explaining this MERN application during an interview.
 
 ---
 
@@ -16,37 +16,40 @@ This guide covers essential technical concepts, common questions, and practical 
 
 ---
 
-## 2. Key MERN Concepts & Questions
+## 2. Backend Architecture & Design Questions
 
-### Q1: Why did you separate frontend and backend into two folders?
-- **Answer**: "Separating them ensures a clean separation of concerns. The frontend only contains UI presentation logic and browser-specific code, while the backend contains data models, business logic, and database connections. It also allows them to have their own separate `package.json` dependencies and makes them ready for independent deployment (e.g., frontend on Vercel/Netlify, backend on Render/AWS)."
+### Q1: Why did you separate routes and controllers into different folders?
+- **Answer**: "Separating routes and controllers follows the Single Responsibility Principle. 
+  - The **route file** (`taskRoutes.js`) only defines the HTTP methods (`GET`, `POST`, `PUT`, `DELETE`) and paths (`/tasks`, `/tasks/:id`).
+  - The **controller file** (`taskController.js`) contains the actual business logic, request validation, database interactions, and response formatting.
+  This makes the code modular, readable, and much easier to unit-test and debug."
 
-### Q2: Why use Vite instead of Create React App?
-- **Answer**: "Create React App is now officially deprecated and uses Webpack, which does full bundle recompilation and can be slow. Vite uses native ES Modules (ESM) in the browser during development, which gives near-instant server start and lightning-fast Hot Module Replacement (HMR)."
+### Q2: How does MongoDB connection work in this project?
+- **Answer**: "We created a dedicated `connectDB()` function in `backend/config/db.js`. It uses `mongoose.connect(process.env.MONGO_URI)`. Because connecting to a database is an asynchronous network operation, we wrap it in an `async/await` block. If connection succeeds, we log the host. If it fails, we catch the error, log a descriptive message, and call `process.exit(1)` to terminate the process safely rather than running in an invalid state."
 
-### Q3: What is the purpose of `dotenv` and `.env.example`?
-- **Answer**: "Sensitive information like database connection strings (which contain credentials) and server ports should never be hardcoded or checked into public source control (Git). We keep them in a `.env` file and add `.env` to `.gitignore`. We provide `.env.example` as a template containing placeholder values so other developers know what environment variables are needed."
+### Q3: How do you handle invalid MongoDB IDs?
+- **Answer**: "MongoDB uses 24-character hexadecimal `ObjectId` strings. If a client sends an invalid ID like `/tasks/123`, querying MongoDB directly will throw a Mongoose `CastError`. To provide an instant, clean response, we check `mongoose.Types.ObjectId.isValid(req.params.id)` right inside the controller. If it is invalid, we immediately return `400 Bad Request` with `{ success: false, message: 'Invalid task ID format' }`. In addition, our global error middleware is configured to catch any unhandled `CastError`."
 
-### Q4: What is CORS and why do we need the `cors` package in Express?
-- **Answer**: "CORS stands for Cross-Origin Resource Sharing. By default, web browsers block web pages from making HTTP requests to a different domain, port, or protocol for security (Same-Origin Policy). Because our React app runs on `http://localhost:5173` and Express runs on `http://localhost:5000`, they are different origins. The `cors` package in Express sets the necessary HTTP headers (like `Access-Control-Allow-Origin`) so our frontend can communicate with the backend."
+### Q4: How does status filtering and sorting work in `GET /tasks`?
+- **Answer**: "Clients pass query parameters in the URL, for example `GET /tasks?status=todo&sortBy=dueDate&order=asc`.
+  - **Filtering**: We read `req.query.status`. If provided, we validate that it matches one of `['todo', 'in_progress', 'done']` and pass it to Mongoose: `Task.find({ status })`.
+  - **Due Date Sorting**: If `req.query.sortBy === 'dueDate'`, we use Mongoose `.sort({ dueDate: order === 'desc' ? -1 : 1 })`.
+  - **Priority Sorting**: Alphabetical sorting fails for priorities because `'low'` comes before `'medium'`. So we map priorities to numerical ranks (`{ high: 1, medium: 2, low: 3 }`) and sort the tasks logically so high-priority tasks always appear first."
 
-### Q5: How does Mongoose help us with MongoDB?
-- **Answer**: "MongoDB is a NoSQL, schema-less database. While this gives flexibility, in real-world applications we need structure and validation. Mongoose is an ODM (Object Data Modeling) library that allows us to define schemas with types, required fields, and default values. It also provides clean async helper methods like `Task.find()`, `Task.create()`, and `Task.findByIdAndDelete()`."
+### Q5: How does Express centralized error handling work?
+- **Answer**: "Express recognizes error-handling middleware by its 4 arguments: `(err, req, res, next)`. Whenever a controller encounters an unexpected exception inside a `catch` block, it calls `next(error)`. Express skips all remaining routes and invokes our `errorHandler` in `errorMiddleware.js`. The middleware determines the proper HTTP status code, formats a clean JSON response `{ success: false, message }`, and deliberately avoids returning raw stack traces to the client for security."
 
-### Q6: Why prefer `async/await` over raw Promises or Callbacks?
-- **Answer**: "`async/await` is syntactic sugar over Promises. It makes asynchronous code look and read like synchronous code, avoiding 'callback hell' or long `.then()` chains. It also allows us to handle errors cleanly using standard `try/catch` blocks."
+### Q6: Why do we never return raw stack traces to clients?
+- **Answer**: "Stack traces expose internal file paths, operating system details, third-party library versions, and database structure. Exposing this information in production creates security vulnerabilities that attackers can exploit (Information Disclosure). Users and clients should only receive friendly, actionable error messages."
+
+### Q7: What is the difference between `PUT` and `PATCH`?
+- **Answer**: "In strict REST semantics, `PUT` is used to replace an entire resource, while `PATCH` applies partial modifications. In many practical Node/Express apps, `PUT` is often implemented to accept partial updates (`findByIdAndUpdate(id, req.body)`). In this assignment, `PUT /tasks/:id` allows updating any field of the task cleanly with Mongoose validation."
 
 ---
 
 ## 3. Explaining the REST API Design
-- **GET /api/tasks**: Retrieves all tasks from MongoDB.
-- **POST /api/tasks**: Creates a new task after validating that the title is provided. Returns `201 Created`.
-- **PUT /api/tasks/:id**: Updates a specific task's title, description, or completion status.
-- **DELETE /api/tasks/:id**: Deletes the specified task by ID and returns a confirmation.
-
----
-
-## 4. Key Talking Points for Code Cleanliness
-- Keep components focused on a single responsibility.
-- Use meaningful variable and function names (e.g., `fetchTasks`, `handleToggleStatus`, `handleDeleteTask`).
-- Return standard HTTP status codes (`200`, `201`, `400`, `404`, `500`) with consistent JSON format (`{ success, data }` or `{ success, message }`).
+- **POST /tasks**: Creates a new task after validating that the title is provided. Returns `201 Created`.
+- **GET /tasks**: Retrieves tasks from MongoDB with optional status filter and sorting. Returns `200 OK`.
+- **GET /tasks/:id**: Retrieves single task by valid ObjectId. Returns `200 OK` or `404 Not Found`.
+- **PUT /tasks/:id**: Updates any task field with validation. Returns `200 OK` or `404 Not Found`.
+- **DELETE /tasks/:id**: Deletes the task by ID. Returns `200 OK` with confirmation.
